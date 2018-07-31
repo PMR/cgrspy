@@ -7,6 +7,21 @@
 #include <sstream>
 #include <list>
 
+// Laziest manner to get Python 2 and 3 supported
+
+#if PY_MAJOR_VERSION >= 3
+  #define PyInt_FromLong               PyLong_FromLong
+  #define PyInt_AsLong                 PyLong_AsLong
+  #define PyString_FromStringAndSize   PyUnicode_FromStringAndSize
+  #define PyString_FromString          PyUnicode_FromString
+  #define PyString_AsString            PyBytes_AsString
+  #define PyString_Size                PyBytes_Size
+#endif
+
+#ifndef Py_TYPE
+  #define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
+
 typedef struct {
     PyObject_HEAD
     iface::XPCOM::IObject* mObject;
@@ -322,8 +337,12 @@ private:
 };
 
 static PyTypeObject ObjectType = {
+#if PY_MAJOR_VERSION < 3
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#else
+    PyVarObject_HEAD_INIT(NULL, 0)
+#endif
     "cgrspy.Object",           /*tp_name*/
     sizeof(Object),            /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -370,8 +389,12 @@ static PyMemberDef Enum_members[] = {
 };
 
 static PyTypeObject EnumType = {
+#if PY_MAJOR_VERSION < 3
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#else
+    PyVarObject_HEAD_INIT(NULL, 0)
+#endif
     "cgrspy.Enum",             /*tp_name*/
     sizeof(Enum),              /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -412,8 +435,12 @@ static PyTypeObject EnumType = {
 };
 
 static PyTypeObject MethodType = {
+#if PY_MAJOR_VERSION < 3
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#else
+    PyVarObject_HEAD_INIT(NULL, 0)
+#endif
     "cgrspy.Method",           /*tp_name*/
     sizeof(Method),            /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -660,7 +687,7 @@ ObjectDealloc(Object* self)
 {
   if (self->mObject != NULL)
     self->mObject->release_ref();
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* Object_new(iface::XPCOM::IObject* aValue)
@@ -675,7 +702,7 @@ static PyObject* Object_new(iface::XPCOM::IObject* aValue)
 static void EnumDealloc(Enum* self)
 {
   Py_CLEAR(self->asString);
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static int EnumInit(Enum *self, PyObject *args, PyObject *kwds)
@@ -954,7 +981,11 @@ pythonValueToGenericW(PyObject* aPyVal, const std::string& aTypename, iface::CGR
     }
 
     wchar_t buf[sl + 1];
+#if PY_MAJOR_VERSION < 3
     PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(aPyVal), buf, sl);
+#else
+    PyUnicode_AsWideChar(aPyVal, buf, sl);
+#endif
 
     Py_DECREF(aPyVal);
 
@@ -1201,7 +1232,7 @@ methodDealloc(Method* self)
     self->mInvokeMethod->release_ref();
   if (self->mInvokeOn != NULL)
     self->mInvokeOn->release_ref();
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject*
@@ -1358,16 +1389,47 @@ static PyMethodDef BootstrapMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+#if PY_MAJOR_VERSION >= 3
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "cgrspy.bootstrap",
+        NULL,
+        0,
+        BootstrapMethods,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_bootstrap(void)
+
+#else
+#define INITERROR return
 PyMODINIT_FUNC
 initbootstrap(void)
+#endif
 {
   PyObject *m;
   
-  m = Py_InitModule("cgrspy.bootstrap", BootstrapMethods);
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule("cgrspy.bootstrap", BootstrapMethods);
+#endif
+
   if (m == NULL)
-    return;
+    INITERROR;
 
   PyType_Ready(&ObjectType);
   PyType_Ready(&EnumType);
   PyType_Ready(&MethodType);
+
+#if PY_MAJOR_VERSION >= 3
+  return module;
+#endif
 }

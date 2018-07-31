@@ -1,11 +1,3 @@
-try:
-    # Only do this with the development
-    from ez_setup import use_setuptools
-    use_setuptools()
-except ImportError:
-    # ez_setup unneeded when packaged as an egg.
-    pass
-
 from setuptools import setup, find_packages
 from distutils.core import Extension
 from distutils.cmd import Command
@@ -28,7 +20,7 @@ class test_cgrspy(distutils.command.build.build):
 
 
 setup(name="cgrspy",
-      version="1.1.1",
+      version="1.2.0",
       description="Python interface to the CellML Generics and Reflection "
                   "Service",
       long_description=open("README.rst").read(),
