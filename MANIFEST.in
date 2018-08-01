@@ -1,5 +1,5 @@
 recursive-include cgrspy *
-include README.rst
+include *.rst
 include setup.py
 global-exclude *~
 global-exclude *pyc
