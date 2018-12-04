@@ -1410,19 +1410,17 @@ PyInit_bootstrap(void)
 
 #else
 #define INITERROR return
-PyMODINIT_FUNC
+void
 initbootstrap(void)
 #endif
 {
-  PyObject *m;
-  
 #if PY_MAJOR_VERSION >= 3
-    PyObject *module = PyModule_Create(&moduledef);
+  PyObject *module = PyModule_Create(&moduledef);
 #else
-    m = Py_InitModule("cgrspy.bootstrap", BootstrapMethods);
+  PyObject *module = Py_InitModule("cgrspy.bootstrap", BootstrapMethods);
 #endif
 
-  if (m == NULL)
+  if (module == NULL)
     INITERROR;
 
   PyType_Ready(&ObjectType);
