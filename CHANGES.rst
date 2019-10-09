@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.3.1 (2019-10-09)
+------------------
+
+- Correct a typo with the Python 2 module creation function.
+
 1.3.0 (2018-12-04)
 ------------------
 
