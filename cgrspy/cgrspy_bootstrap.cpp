@@ -1410,7 +1410,7 @@ PyInit_bootstrap(void)
 
 #else
 #define INITERROR return
-void
+PyMODINIT_FUNC
 initbootstrap(void)
 #endif
 {
